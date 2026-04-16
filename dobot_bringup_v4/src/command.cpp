@@ -82,7 +82,9 @@ void CRCommanderRos2::recvTask()
         {
             try
             {
-                dash_board_tcp_->connect();
+                std::lock_guard<std::mutex> lock(dashboard_mutex_);
+                if (!dash_board_tcp_->isConnect())
+                    dash_board_tcp_->connect();
             }
             catch (const TcpClientException &err)
             {
@@ -113,49 +115,39 @@ void CRCommanderRos2::doTcpCmd(std::shared_ptr<TcpClient> &tcp, const char *cmd,
                                std::vector<std::string> &result)
 {
     std::ignore = result;
-    try
+    std::lock_guard<std::mutex> lock(dashboard_mutex_);
+    if (!tcp->isConnect())
     {
-        uint32_t has_read;
-        char buf[1024];
-        memset(buf, 0, sizeof(buf));
-        auto currentTime = std::chrono::system_clock::now();
-        auto currentTime_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(currentTime);
-        auto valueMS = currentTime_ms.time_since_epoch().count();
-        std::cout <<"time: "<<valueMS <<"  tcp send cmd :" << cmd << std::endl;
-
-        tcp->tcpSend(cmd, strlen(cmd));
-        char *recv_ptr = buf;
-        while (true)
-        {
-            bool err = tcp->tcpRecv(recv_ptr, 1024, has_read, 0);
-            if (!err)
-            {
-                sleep(0.01);
-                continue;
-            }
-            if (*(recv_ptr + strlen(recv_ptr) - 1) == ';')
-                break;
-
-            recv_ptr = recv_ptr + strlen(recv_ptr);
-        }
-        for (int i = 0; i < 2000;i++)  //赋值
-        {
-            if (recv_ptr[i] == '{')
-            {
-                std::string str(recv_ptr); // 将char*类型转为string类型
-                std::string result = str.substr(0, i-1); // 使用substr函数截取指定长度的子字符串
-                int num = stringToInt(result);
-                err_id = num;
-                std::cout << "ErrorID: " << result<< std::endl;
-            }
-            
-        }
-
-        std::cout << "tcp recv feedback : " << recv_ptr << std::endl; // FIXME parse the buf may be better
+        throw TcpClientException("tcp is disconnected");
     }
-    catch (const std::logic_error &err)
+    uint32_t has_read;
+    char buf[1024];
+    memset(buf, 0, sizeof(buf));
+
+    tcp->tcpSend(cmd, strlen(cmd));
+    char *recv_ptr = buf;
+    while (true)
     {
-        std::cout << "tcpDoCmd failed " << std::endl;
+        bool err = tcp->tcpRecv(recv_ptr, 1024, has_read, 0);
+        if (!err)
+        {
+            sleep(0.01);
+            continue;
+        }
+        if (*(recv_ptr + strlen(recv_ptr) - 1) == ';')
+            break;
+
+        recv_ptr = recv_ptr + strlen(recv_ptr);
+    }
+    for (int i = 0; i < 2000;i++)  //赋值
+    {
+        if (recv_ptr[i] == '{')
+        {
+            std::string str(recv_ptr); // 将char*类型转为string类型
+            std::string result = str.substr(0, i-1); // 使用substr函数截取指定长度的子字符串
+            int num = stringToInt(result);
+            err_id = num;
+        }
     }
 }
 
@@ -164,56 +156,48 @@ void CRCommanderRos2::doTcpCmd_f(std::shared_ptr<TcpClient> &tcp, const char *cm
                                std::vector<std::string> &result)
 {
     std::ignore = result;
-    try
+    std::lock_guard<std::mutex> lock(dashboard_mutex_);
+    if (!tcp->isConnect())
     {
-        uint32_t has_read;
-        char buf[1024];
-        memset(buf, 0, sizeof(buf));
-        auto currentTime = std::chrono::system_clock::now();
-        auto currentTime_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(currentTime);
-        auto valueMS = currentTime_ms.time_since_epoch().count();
-        std::cout <<"time: "<<valueMS <<"  tcp send cmd :" << cmd << std::endl;
-        tcp->tcpSend(cmd, strlen(cmd));
-        char *recv_ptr = buf;
-        while (true)
-        {
-            bool err = tcp->tcpRecv(recv_ptr, 1024, has_read, 0);
-            if (!err)
-            {
-                sleep(0.01);
-                continue;
-            }
-            if (*(recv_ptr + strlen(recv_ptr) - 1) == ';')
-                break;
-
-            recv_ptr = recv_ptr + strlen(recv_ptr);
-        }
-        int pose1 = 0;
-        for (int i = 0; i < 2000;i++)  //赋值
-        {
-            if (recv_ptr[i] == '{')
-            {
-                std::string str(recv_ptr); // 将char*类型转为string类型
-                std::string result = str.substr(0, i-1); // 使用substr函数截取指定长度的子字符串
-                int num = stringToInt(result);
-                err_id = num;
-                std::cout << "ErrorID: " << num<< std::endl;
-                pose1 = i;
-            }
-            if (recv_ptr[i] == '}')
-            {
-                std::string str(recv_ptr); // 将char*类型转为string类型
-                std::string result = str.substr(pose1, i-pose1+1); // 使用substr函数截取指定长度的子字符串
-                mode_id = result;
-                break;
-            }
-            
-        }
-        std::cout << "tcp recv feedback : " << recv_ptr << std::endl; // FIXME parse the buf may be better
+        throw TcpClientException("tcp is disconnected");
     }
-    catch (const std::logic_error &err)
+    uint32_t has_read;
+    char buf[1024];
+    memset(buf, 0, sizeof(buf));
+    tcp->tcpSend(cmd, strlen(cmd));
+    char *recv_ptr = buf;
+    while (true)
     {
-        std::cout << "tcpDoCmd failed " << std::endl;
+        bool err = tcp->tcpRecv(recv_ptr, 1024, has_read, 0);
+        if (!err)
+        {
+            sleep(0.01);
+            continue;
+        }
+        if (*(recv_ptr + strlen(recv_ptr) - 1) == ';')
+            break;
+
+        recv_ptr = recv_ptr + strlen(recv_ptr);
+    }
+    int pose1 = 0;
+    for (int i = 0; i < 2000;i++)  //赋值
+    {
+        if (recv_ptr[i] == '{')
+        {
+            std::string str(recv_ptr); // 将char*类型转为string类型
+            std::string result = str.substr(0, i-1); // 使用substr函数截取指定长度的子字符串
+            int num = stringToInt(result);
+            err_id = num;
+            pose1 = i;
+        }
+        if (recv_ptr[i] == '}')
+        {
+            std::string str(recv_ptr); // 将char*类型转为string类型
+            std::string result = str.substr(pose1, i-pose1+1); // 使用substr函数截取指定长度的子字符串
+            mode_id = result;
+            break;
+        }
+        
     }
 }
 
@@ -225,9 +209,9 @@ bool CRCommanderRos2::callRosService(const std::string cmd, int32_t &err_id)
         doTcpCmd(this->dash_board_tcp_, cmd.c_str(), err_id, result_);
         return true;
     }
-    catch (const TcpClientException &err)
+    catch (const std::exception &err)
     {
-        std::cout << "%s" << std::endl;
+        std::cout << err.what() << std::endl;
         err_id = -1;
         return false;
     }
@@ -240,10 +224,11 @@ bool CRCommanderRos2::callRosService_f(const std::string cmd, int32_t &err_id,st
         doTcpCmd_f(this->dash_board_tcp_, cmd.c_str(), err_id,mode_id, result_);
         return true;
     }
-    catch (const TcpClientException &err)
+    catch (const std::exception &err)
     {
-        std::cout << "%s" << std::endl;
+        std::cout << err.what() << std::endl;
         err_id = -1;
+        mode_id.clear();
         return false;
     }
 }
@@ -254,9 +239,9 @@ bool CRCommanderRos2::callRosService(const std::string cmd, int32_t &err_id, std
         doTcpCmd(this->dash_board_tcp_, cmd.c_str(), err_id, result_);
         return true;
     }
-    catch (const TcpClientException &err)
+    catch (const std::exception &err)
     {
-        std::cout << "%s" << std::endl;
+        std::cout << err.what() << std::endl;
         err_id = -1;
         return false;
     }

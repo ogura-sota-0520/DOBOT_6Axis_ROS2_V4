@@ -1,6 +1,41 @@
 #include <dobot_bringup/cr_robot_ros2.h>
 #include <sensor_msgs/msg/joint_state.hpp>
 
+namespace
+{
+std::string trimSlashes(const std::string &value)
+{
+    const auto begin = value.find_first_not_of('/');
+    if (begin == std::string::npos)
+    {
+        return "";
+    }
+    const auto end = value.find_last_not_of('/');
+    return value.substr(begin, end - begin + 1);
+}
+
+std::string buildScopedName(const std::string &scope, const std::string &suffix)
+{
+    const std::string normalizedScope = trimSlashes(scope);
+    const std::string normalizedSuffix = trimSlashes(suffix);
+    if (normalizedScope.empty())
+    {
+        return "/" + normalizedSuffix;
+    }
+    return "/" + normalizedScope + "/" + normalizedSuffix;
+}
+
+std::string buildServiceName(const std::string &scope, const std::string &endpoint)
+{
+    return buildScopedName(scope, "dobot_bringup_ros2/srv/" + endpoint);
+}
+
+std::string buildMessageTopic(const std::string &scope, const std::string &topicName)
+{
+    return buildScopedName(scope, "dobot_bringup_ros2/msg/" + topicName);
+}
+} // namespace
+
 CRRobotRos2::CRRobotRos2() : rclcpp::Node("dobot_bringup_ros2"){};
 
 void CRRobotRos2::init()
@@ -30,134 +65,138 @@ void CRRobotRos2::init()
 
     if (robotNumber > 1)
     {
-        kRobotName = robotNodeName + "/";
+        kRobotName = robotNodeName;
+    }
+    else
+    {
+        kRobotName.clear();
     }
 
-    std::string serviceEnableRobot = kRobotName + "/dobot_bringup_ros2/srv/EnableRobot";
-    std::string serviceDisableRobot = kRobotName + "/dobot_bringup_ros2/srv/DisableRobot";
-    std::string serviceClearError = kRobotName + "/dobot_bringup_ros2/srv/ClearError";
-    std::string serviceSpeedFactor = kRobotName + "/dobot_bringup_ros2/srv/SpeedFactor";
-    std::string serviceUser = kRobotName + "/dobot_bringup_ros2/srv/User";
-    std::string serviceTool = kRobotName + "/dobot_bringup_ros2/srv/Tool";
-    std::string serviceRobotMode = kRobotName + "/dobot_bringup_ros2/srv/RobotMode";
-    std::string serviceSetPayload = kRobotName + "/dobot_bringup_ros2/srv/SetPayload";
-    std::string serviceDO = kRobotName + "/dobot_bringup_ros2/srv/DO";
-    std::string serviceDOInstant = kRobotName + "/dobot_bringup_ros2/srv/DOInstant";
-    std::string serviceToolDO = kRobotName + "/dobot_bringup_ros2/srv/ToolDO";
-    std::string serviceToolDOInstant = kRobotName + "/dobot_bringup_ros2/srv/ToolDOInstant";
-    std::string serviceAO = kRobotName + "/dobot_bringup_ros2/srv/AO";
-    std::string serviceAOInstant = kRobotName + "/dobot_bringup_ros2/srv/AOInstant";
-    std::string serviceAccJ = +"/dobot_bringup_ros2/srv/AccJ";
-    std::string serviceAccL = kRobotName + "/dobot_bringup_ros2/srv/AccL";
-    std::string serviceVelJ = kRobotName + "/dobot_bringup_ros2/srv/VelJ";
-    std::string serviceVelL = kRobotName + "/dobot_bringup_ros2/srv/VelL";
-    std::string serviceCP = kRobotName + "/dobot_bringup_ros2/srv/CP";
-    std::string servicePowerOn = kRobotName + "/dobot_bringup_ros2/srv/PowerOn";
-    std::string serviceRunScript = kRobotName + "/dobot_bringup_ros2/srv/RunScript";
-    std::string serviceStop = kRobotName + "/dobot_bringup_ros2/srv/Stop";
-    std::string servicePause = kRobotName + "/dobot_bringup_ros2/srv/Pause";
-    std::string serviceContinue = kRobotName + "/dobot_bringup_ros2/srv/Continue";
+    std::string serviceEnableRobot = buildServiceName(kRobotName, "EnableRobot");
+    std::string serviceDisableRobot = buildServiceName(kRobotName, "DisableRobot");
+    std::string serviceClearError = buildServiceName(kRobotName, "ClearError");
+    std::string serviceSpeedFactor = buildServiceName(kRobotName, "SpeedFactor");
+    std::string serviceUser = buildServiceName(kRobotName, "User");
+    std::string serviceTool = buildServiceName(kRobotName, "Tool");
+    std::string serviceRobotMode = buildServiceName(kRobotName, "RobotMode");
+    std::string serviceSetPayload = buildServiceName(kRobotName, "SetPayload");
+    std::string serviceDO = buildServiceName(kRobotName, "DO");
+    std::string serviceDOInstant = buildServiceName(kRobotName, "DOInstant");
+    std::string serviceToolDO = buildServiceName(kRobotName, "ToolDO");
+    std::string serviceToolDOInstant = buildServiceName(kRobotName, "ToolDOInstant");
+    std::string serviceAO = buildServiceName(kRobotName, "AO");
+    std::string serviceAOInstant = buildServiceName(kRobotName, "AOInstant");
+    std::string serviceAccJ = buildServiceName(kRobotName, "AccJ");
+    std::string serviceAccL = buildServiceName(kRobotName, "AccL");
+    std::string serviceVelJ = buildServiceName(kRobotName, "VelJ");
+    std::string serviceVelL = buildServiceName(kRobotName, "VelL");
+    std::string serviceCP = buildServiceName(kRobotName, "CP");
+    std::string servicePowerOn = buildServiceName(kRobotName, "PowerOn");
+    std::string serviceRunScript = buildServiceName(kRobotName, "RunScript");
+    std::string serviceStop = buildServiceName(kRobotName, "Stop");
+    std::string servicePause = buildServiceName(kRobotName, "Pause");
+    std::string serviceContinue = buildServiceName(kRobotName, "Continue");
 
-    std::string serviceEnableSafeSkin = kRobotName + "/dobot_bringup_ros2/srv/EnableSafeSkin";
-    std::string serviceSetSafeSkin = kRobotName + "/dobot_bringup_ros2/srv/SetSafeSkin";
-    std::string serviceGetStartPose = kRobotName + "/dobot_bringup_ros2/srv/GetStartPose";
-    std::string serviceStartPath = kRobotName + "/dobot_bringup_ros2/srv/StartPatht";
-    std::string servicePositiveKin = kRobotName + "/dobot_bringup_ros2/srv/PositiveKin";
-    std::string serviceInverseKin = kRobotName + "/dobot_bringup_ros2/srv/InverseKin";
-    std::string serviceGetAngle = kRobotName + "/dobot_bringup_ros2/srv/GetAngle";
-    std::string serviceGetPose = kRobotName + "/dobot_bringup_ros2/srv/GetPose";
-    std::string serviceSetCollisionLevel = kRobotName + "/dobot_bringup_ros2/srv/SetCollisionLevel";
-    std::string serviceEmergencyStop = kRobotName + "/dobot_bringup_ros2/srv/EmergencyStop";
-    std::string serviceModbusRTUCreate = kRobotName + "/dobot_bringup_ros2/srv/ModbusRTUCreate";
-    std::string serviceModbusCreate = kRobotName + "/dobot_bringup_ros2/srv/ModbusCreate";
-    std::string serviceModbusClose = kRobotName + "/dobot_bringup_ros2/srv/ModbusClose";
-    std::string serviceGetInBits = kRobotName + "/dobot_bringup_ros2/srv/GetInBits";
-    std::string serviceGetInRegs = kRobotName + "/dobot_bringup_ros2/srv/GetInRegs";
-    std::string serviceGetCoils = kRobotName + "/dobot_bringup_ros2/srv/GetCoils";
-    std::string serviceSetCoils = kRobotName + "/dobot_bringup_ros2/srv/SetCoils";
-    std::string serviceGetHoldRegs = kRobotName + "/dobot_bringup_ros2/srv/GetHoldRegs";
-    std::string serviceSetHoldRegs = kRobotName + "/dobot_bringup_ros2/srv/SetHoldRegs";
+    std::string serviceEnableSafeSkin = buildServiceName(kRobotName, "EnableSafeSkin");
+    std::string serviceSetSafeSkin = buildServiceName(kRobotName, "SetSafeSkin");
+    std::string serviceGetStartPose = buildServiceName(kRobotName, "GetStartPose");
+    std::string serviceStartPath = buildServiceName(kRobotName, "StartPatht");
+    std::string servicePositiveKin = buildServiceName(kRobotName, "PositiveKin");
+    std::string serviceInverseKin = buildServiceName(kRobotName, "InverseKin");
+    std::string serviceGetAngle = buildServiceName(kRobotName, "GetAngle");
+    std::string serviceGetPose = buildServiceName(kRobotName, "GetPose");
+    std::string serviceSetCollisionLevel = buildServiceName(kRobotName, "SetCollisionLevel");
+    std::string serviceEmergencyStop = buildServiceName(kRobotName, "EmergencyStop");
+    std::string serviceModbusRTUCreate = buildServiceName(kRobotName, "ModbusRTUCreate");
+    std::string serviceModbusCreate = buildServiceName(kRobotName, "ModbusCreate");
+    std::string serviceModbusClose = buildServiceName(kRobotName, "ModbusClose");
+    std::string serviceGetInBits = buildServiceName(kRobotName, "GetInBits");
+    std::string serviceGetInRegs = buildServiceName(kRobotName, "GetInRegs");
+    std::string serviceGetCoils = buildServiceName(kRobotName, "GetCoils");
+    std::string serviceSetCoils = buildServiceName(kRobotName, "SetCoils");
+    std::string serviceGetHoldRegs = buildServiceName(kRobotName, "GetHoldRegs");
+    std::string serviceSetHoldRegs = buildServiceName(kRobotName, "SetHoldRegs");
 
-    std::string serviceGetErrorID = kRobotName + "/dobot_bringup_ros2/srv/GetErrorID";
-    std::string serviceDI = kRobotName + "/dobot_bringup_ros2/srv/DI";
-    std::string serviceToolDI = kRobotName + "/dobot_bringup_ros2/srv/ToolDI";
-    std::string serviceAI = kRobotName + "/dobot_bringup_ros2/srv/AI";
-    std::string serviceToolAI = kRobotName + "/dobot_bringup_ros2/srv/ToolAI";
-    std::string serviceDIGroup = kRobotName + "/dobot_bringup_ros2/srv/DIGroup";
-    std::string serviceDOGroup = kRobotName + "/dobot_bringup_ros2/srv/DoGroup";
-    std::string serviceBrakeControl = kRobotName + "/dobot_bringup_ros2/srv/BrakeControl";
-    std::string serviceStartDrag = kRobotName + "/dobot_bringup_ros2/srv/StartDrag";
-    std::string serviceStopDrag = kRobotName + "/dobot_bringup_ros2/srv/StopDrag";
-    std::string serviceDragSensivity = kRobotName + "/dobot_bringup_ros2/srv/DragSensivity";
-    std::string serviceGetDO = kRobotName + "/dobot_bringup_ros2/srv/GetDO";
-    std::string serviceGetAO = kRobotName + "/dobot_bringup_ros2/srv/GetAO";
-    std::string serviceGetDOGroup = kRobotName + "/dobot_bringup_ros2/srv/GetDOGroup";
-    std::string serviceSetTool485 = kRobotName + "/dobot_bringup_ros2/srv/SetTool485";
-    std::string serviceSetSafeWallEnable = kRobotName + "/dobot_bringup_ros2/srv/SetSafeWallEnable";
-    std::string serviceSetToolPower = kRobotName + "/dobot_bringup_ros2/srv/SetToolPower";
-    std::string serviceSetToolMode = kRobotName + "/dobot_bringup_ros2/srv/SetToolMode";
-    std::string serviceSetBackDistance = kRobotName + "/dobot_bringup_ros2/srv/SetBackDistance";
-    std::string serviceSetPostCollisionMode = kRobotName + "/dobot_bringup_ros2/srv/SetPostCollisionMode";
-    std::string serviceSetUser = kRobotName + "/dobot_bringup_ros2/srv/SetUser";
-    std::string serviceSetTool = kRobotName + "/dobot_bringup_ros2/srv/SetTool";
-    std::string serviceCalcUser = kRobotName + "/dobot_bringup_ros2/srv/CalcUser";
-    std::string serviceCalcTool = kRobotName + "/dobot_bringup_ros2/srv/CalcTool";
-    std::string serviceGetInputBool = kRobotName + "/dobot_bringup_ros2/srv/GetInputBool";
-    std::string serviceGetInputInt = kRobotName + "/dobot_bringup_ros2/srv/GetInputInt";
-    std::string serviceGetInputFloat = kRobotName + "/dobot_bringup_ros2/srv/GetInputFloat";
-    std::string serviceGetOutputBool = kRobotName + "/dobot_bringup_ros2/srv/GetOutputBool";
-    std::string serviceGetOutputInt = kRobotName + "/dobot_bringup_ros2/srv/GetOutputInt";
-    std::string serviceGetOutputFloat = kRobotName + "/dobot_bringup_ros2/srv/GetOutputFloat";
-    std::string serviceSetOutputBool = kRobotName + "/dobot_bringup_ros2/srv/SetOutputBool";
-    std::string serviceSetOutputInt = kRobotName + "/dobot_bringup_ros2/srv/SetOutputInt";
-    std::string serviceSetOutputFloat = kRobotName + "/dobot_bringup_ros2/srv/SetOutputFloat";
+    std::string serviceGetErrorID = buildServiceName(kRobotName, "GetErrorID");
+    std::string serviceDI = buildServiceName(kRobotName, "DI");
+    std::string serviceToolDI = buildServiceName(kRobotName, "ToolDI");
+    std::string serviceAI = buildServiceName(kRobotName, "AI");
+    std::string serviceToolAI = buildServiceName(kRobotName, "ToolAI");
+    std::string serviceDIGroup = buildServiceName(kRobotName, "DIGroup");
+    std::string serviceDOGroup = buildServiceName(kRobotName, "DoGroup");
+    std::string serviceBrakeControl = buildServiceName(kRobotName, "BrakeControl");
+    std::string serviceStartDrag = buildServiceName(kRobotName, "StartDrag");
+    std::string serviceStopDrag = buildServiceName(kRobotName, "StopDrag");
+    std::string serviceDragSensivity = buildServiceName(kRobotName, "DragSensivity");
+    std::string serviceGetDO = buildServiceName(kRobotName, "GetDO");
+    std::string serviceGetAO = buildServiceName(kRobotName, "GetAO");
+    std::string serviceGetDOGroup = buildServiceName(kRobotName, "GetDOGroup");
+    std::string serviceSetTool485 = buildServiceName(kRobotName, "SetTool485");
+    std::string serviceSetSafeWallEnable = buildServiceName(kRobotName, "SetSafeWallEnable");
+    std::string serviceSetToolPower = buildServiceName(kRobotName, "SetToolPower");
+    std::string serviceSetToolMode = buildServiceName(kRobotName, "SetToolMode");
+    std::string serviceSetBackDistance = buildServiceName(kRobotName, "SetBackDistance");
+    std::string serviceSetPostCollisionMode = buildServiceName(kRobotName, "SetPostCollisionMode");
+    std::string serviceSetUser = buildServiceName(kRobotName, "SetUser");
+    std::string serviceSetTool = buildServiceName(kRobotName, "SetTool");
+    std::string serviceCalcUser = buildServiceName(kRobotName, "CalcUser");
+    std::string serviceCalcTool = buildServiceName(kRobotName, "CalcTool");
+    std::string serviceGetInputBool = buildServiceName(kRobotName, "GetInputBool");
+    std::string serviceGetInputInt = buildServiceName(kRobotName, "GetInputInt");
+    std::string serviceGetInputFloat = buildServiceName(kRobotName, "GetInputFloat");
+    std::string serviceGetOutputBool = buildServiceName(kRobotName, "GetOutputBool");
+    std::string serviceGetOutputInt = buildServiceName(kRobotName, "GetOutputInt");
+    std::string serviceGetOutputFloat = buildServiceName(kRobotName, "GetOutputFloat");
+    std::string serviceSetOutputBool = buildServiceName(kRobotName, "SetOutputBool");
+    std::string serviceSetOutputInt = buildServiceName(kRobotName, "SetOutputInt");
+    std::string serviceSetOutputFloat = buildServiceName(kRobotName, "SetOutputFloat");
 
-    std::string serviceMovJ = kRobotName + "/dobot_bringup_ros2/srv/MovJ";
-    std::string serviceMovL = kRobotName + "/dobot_bringup_ros2/srv/MovL";
-    std::string serviceMovLIO = kRobotName + "/dobot_bringup_ros2/srv/MovLIO";
-    std::string serviceMovJIO = kRobotName + "/dobot_bringup_ros2/srv/MovJIO";
-    std::string serviceArc = kRobotName + "/dobot_bringup_ros2/srv/Arc";
-    std::string serviceCircle = kRobotName + "/dobot_bringup_ros2/srv/Circle";
-    std::string serviceMoveJog = kRobotName + "/dobot_bringup_ros2/srv/MoveJog";
-    std::string serviceStopMoveJog = kRobotName + "/dobot_bringup_ros2/srv/StopMoveJog";
-    std::string serviceRelMovJTool = kRobotName + "/dobot_bringup_ros2/srv/RelMovJTool";
-    std::string serviceRelMovLTool = kRobotName + "/dobot_bringup_ros2/srv/RelMovLTool";
-    std::string serviceRelMovJUser = kRobotName + "/dobot_bringup_ros2/srv/RelMovJUser";
-    std::string serviceRelMovLUser = kRobotName + "/dobot_bringup_ros2/srv/RelMovLUser";
-    std::string serviceRelJointMovJ = kRobotName + "/dobot_bringup_ros2/srv/RelJointMovJ";
-    std::string serviceGetCurrentCommandId = kRobotName + "/dobot_bringup_ros2/srv/GetCurrentCommandId";
-    std::string serviceServoJ = kRobotName + "/dobot_bringup_ros2/srv/ServoJ";
-    std::string serviceServoP = kRobotName + "/dobot_bringup_ros2/srv/ServoP";
+    std::string serviceMovJ = buildServiceName(kRobotName, "MovJ");
+    std::string serviceMovL = buildServiceName(kRobotName, "MovL");
+    std::string serviceMovLIO = buildServiceName(kRobotName, "MovLIO");
+    std::string serviceMovJIO = buildServiceName(kRobotName, "MovJIO");
+    std::string serviceArc = buildServiceName(kRobotName, "Arc");
+    std::string serviceCircle = buildServiceName(kRobotName, "Circle");
+    std::string serviceMoveJog = buildServiceName(kRobotName, "MoveJog");
+    std::string serviceStopMoveJog = buildServiceName(kRobotName, "StopMoveJog");
+    std::string serviceRelMovJTool = buildServiceName(kRobotName, "RelMovJTool");
+    std::string serviceRelMovLTool = buildServiceName(kRobotName, "RelMovLTool");
+    std::string serviceRelMovJUser = buildServiceName(kRobotName, "RelMovJUser");
+    std::string serviceRelMovLUser = buildServiceName(kRobotName, "RelMovLUser");
+    std::string serviceRelJointMovJ = buildServiceName(kRobotName, "RelJointMovJ");
+    std::string serviceGetCurrentCommandId = buildServiceName(kRobotName, "GetCurrentCommandId");
+    std::string serviceServoJ = buildServiceName(kRobotName, "ServoJ");
+    std::string serviceServoP = buildServiceName(kRobotName, "ServoP");
 
-    std::string serviceEnableFTSensor = kRobotName + "/dobot_bringup_ros2/srv/EnableFTSensor";
-    std::string serviceSixForceHome = kRobotName + "/dobot_bringup_ros2/srv/SixForceHome";
-    std::string serviceGetForce = kRobotName + "/dobot_bringup_ros2/srv/GetForce";
-    std::string serviceForceDriveMode = kRobotName + "/dobot_bringup_ros2/srv/ForceDriveMode";
-    std::string serviceForceDriveSpeed = kRobotName + "/dobot_bringup_ros2/srv/ForceDriveSpeed";
-    std::string serviceFCForceMode = kRobotName + "/dobot_bringup_ros2/srv/FCForceMode";
-    std::string serviceFCSetDeviation = kRobotName + "/dobot_bringup_ros2/srv/FCSetDeviation";
-    std::string serviceFCSetForceLimit = kRobotName + "/dobot_bringup_ros2/srv/FCSetForceLimit";
-    std::string serviceFCSetMass = kRobotName + "/dobot_bringup_ros2/srv/FCSetMass";
-    std::string serviceFCSetStiffness = kRobotName + "/dobot_bringup_ros2/srv/FCSetStiffness";
-    std::string serviceFCSetDamping = kRobotName + "/dobot_bringup_ros2/srv/FCSetDamping";
-    std::string serviceFCOff = kRobotName + "/dobot_bringup_ros2/srv/FCOff";
-    std::string serviceFCSetForceSpeedLimit = kRobotName + "/dobot_bringup_ros2/srv/FCSetForceSpeedLimit";
-    std::string serviceFCSetForce = kRobotName + "/dobot_bringup_ros2/srv/FCSetForce";
-    std::string serviceSetFCCollision = kRobotName + "/dobot_bringup_ros2/srv/SetFCCollision";
-    std::string serviceFCCollisionSwitch = kRobotName + "/dobot_bringup_ros2/srv/FCCollisionSwitch";
-    std::string serviceSetWorkZoneEnable = kRobotName + "/dobot_bringup_ros2/srv/SetWorkZoneEnable";
-    std::string serviceGetToolDO = kRobotName + "/dobot_bringup_ros2/srv/GetToolDO";
-    std::string serviceResetRobot = kRobotName + "/dobot_bringup_ros2/srv/ResetRobot";
-    std::string serviceRunTo = kRobotName + "/dobot_bringup_ros2/srv/RunTo";
-    std::string serviceStartRTOffset = kRobotName + "/dobot_bringup_ros2/srv/StartRTOffset";
-    std::string serviceEndRTOffset = kRobotName + "/dobot_bringup_ros2/srv/EndRTOffset";
-    std::string serviceGetError = kRobotName + "/dobot_bringup_ros2/srv/GetError";
-    std::string serviceDOGroupDEC = kRobotName + "/dobot_bringup_ros2/srv/DOGroupDEC";
-    std::string serviceGetDOGroupDEC = kRobotName + "/dobot_bringup_ros2/srv/GetDOGroupDEC";
-    std::string serviceDIGroupDEC = kRobotName + "/dobot_bringup_ros2/srv/DIGroupDEC";
-    std::string serviceRequestControl = kRobotName + "/dobot_bringup_ros2/srv/RequestControl";
+    std::string serviceEnableFTSensor = buildServiceName(kRobotName, "EnableFTSensor");
+    std::string serviceSixForceHome = buildServiceName(kRobotName, "SixForceHome");
+    std::string serviceGetForce = buildServiceName(kRobotName, "GetForce");
+    std::string serviceForceDriveMode = buildServiceName(kRobotName, "ForceDriveMode");
+    std::string serviceForceDriveSpeed = buildServiceName(kRobotName, "ForceDriveSpeed");
+    std::string serviceFCForceMode = buildServiceName(kRobotName, "FCForceMode");
+    std::string serviceFCSetDeviation = buildServiceName(kRobotName, "FCSetDeviation");
+    std::string serviceFCSetForceLimit = buildServiceName(kRobotName, "FCSetForceLimit");
+    std::string serviceFCSetMass = buildServiceName(kRobotName, "FCSetMass");
+    std::string serviceFCSetStiffness = buildServiceName(kRobotName, "FCSetStiffness");
+    std::string serviceFCSetDamping = buildServiceName(kRobotName, "FCSetDamping");
+    std::string serviceFCOff = buildServiceName(kRobotName, "FCOff");
+    std::string serviceFCSetForceSpeedLimit = buildServiceName(kRobotName, "FCSetForceSpeedLimit");
+    std::string serviceFCSetForce = buildServiceName(kRobotName, "FCSetForce");
+    std::string serviceSetFCCollision = buildServiceName(kRobotName, "SetFCCollision");
+    std::string serviceFCCollisionSwitch = buildServiceName(kRobotName, "FCCollisionSwitch");
+    std::string serviceSetWorkZoneEnable = buildServiceName(kRobotName, "SetWorkZoneEnable");
+    std::string serviceGetToolDO = buildServiceName(kRobotName, "GetToolDO");
+    std::string serviceResetRobot = buildServiceName(kRobotName, "ResetRobot");
+    std::string serviceRunTo = buildServiceName(kRobotName, "RunTo");
+    std::string serviceStartRTOffset = buildServiceName(kRobotName, "StartRTOffset");
+    std::string serviceEndRTOffset = buildServiceName(kRobotName, "EndRTOffset");
+    std::string serviceGetError = buildServiceName(kRobotName, "GetError");
+    std::string serviceDOGroupDEC = buildServiceName(kRobotName, "DOGroupDEC");
+    std::string serviceGetDOGroupDEC = buildServiceName(kRobotName, "GetDOGroupDEC");
+    std::string serviceDIGroupDEC = buildServiceName(kRobotName, "DIGroupDEC");
+    std::string serviceRequestControl = buildServiceName(kRobotName, "RequestControl");
     
-    std::string topicFeedInfo = kRobotName + "/dobot_bringup_ros2/msg/FeedInfo";
+    std::string topicFeedInfo = buildMessageTopic(kRobotName, "FeedInfo");
 
     kServiceEnableRobot = this->create_service<dobot_msgs_v4::srv::EnableRobot>(serviceEnableRobot, std::bind(&CRRobotRos2::EnableRobot, this, std::placeholders::_1, std::placeholders::_2));
     kServiceDisableRobot = this->create_service<dobot_msgs_v4::srv::DisableRobot>(serviceDisableRobot, std::bind(&CRRobotRos2::DisableRobot, this, std::placeholders::_1, std::placeholders::_2));
@@ -570,7 +609,7 @@ void CRRobotRos2::getErrorID(std::vector<int> &vec)
 {
     std::ignore = vec;
     // 创建服务客户端
-    std::string name = kRobotName + "/dobot_bringup_ros2/srv/GeterrorID";
+    std::string name = buildServiceName(kRobotName, "GetErrorID");
     kClientGeterror = this->create_client<dobot_msgs_v4::srv::GetErrorID>(name);
     // 创建请求消息
     auto request = std::make_shared<dobot_msgs_v4::srv::GetErrorID::Request>();
